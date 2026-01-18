@@ -1,0 +1,41 @@
+ekf_odom_node:
+  ros__parameters:
+    frequency: 50.0
+    sensor_timeout: 0.5 # zed/zed_node/odom 지연:
+    two_d_mode: true
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_link
+    world_frame: odom            # 로컬 EKF는 world=odom
+    transform_timeout: 0.1 
+    publish_tf: true
+    predict_to_current_time: true 
+
+    # ZED VO (Odometry): 위치/자세/속도 사용
+    odom0: /zed/zed_node/odom          
+    odom0_config: [true,  true,  false,   # x y z -> EKF 2에서 사용함
+                   false, false, false,    # roll pitch yaw -> 2D 모드에서는 r p 무시
+                   false,  false,  false,   # vx vy vz
+                   false, false, false,    # vroll vpitch vyaw
+                   false, false, false]   # ax ay az
+    odom0_queue_size: 60
+    odom0_differential: false
+    odom0_relative:     false
+  
+    # IMU: 자세(+ 각속도, 선가속도). 중력 성분 제거 옵션 사용
+    imu0: /zed/zed_node/imu/data        # <- 실제 토픽명
+    imu0_config: [false, false, false,   # x y z (IMU는 위치 없음)
+                  false, false,  true,    # roll pitch yaw -> 2D 모드에서는 r p 무시
+                  false, false, false,   # vx vy vz
+                  false,  false, true,    # vroll vpitch vyaw
+                  false,  false,  false]    # ax ay az
+    imu0_queue_size: 220
+    imu0_differential: false
+    imu0_relative: false
+    imu0_remove_gravitational_acceleration: true
+
+    # 기타
+    print_diagnostics: false
+    dynamic_process_noise_covariance: true
+

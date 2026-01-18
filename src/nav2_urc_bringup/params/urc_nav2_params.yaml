@@ -1,0 +1,274 @@
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      #Publish
+      update_frequency: 20.0
+      publish_frequency: 5.0 # rviz2 view
+      always_send_full_costmap: false
+      # Frames
+      global_frame: odom
+      robot_base_frame: base_link
+      transform_tolerance: 0.1
+      #Rolling window
+      rolling_window: true
+      width: 10
+      height: 10
+      resolution: 0.05
+      #Geometry(Global과 동일하게 설정)
+      footprint: "[[0.53, 0.37], [0.53, -0.37], [-0.53, -0.37], [-0.53, 0.37]]"
+      footprint_padding: 0.04
+      #Unknown handling
+      track_unknown_space: false
+
+      plugins: ["stvl_layer", "denoise_layer","inflation_layer"]
+
+      stvl_layer:
+        plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
+        enabled: true
+        voxel_decay: 5.0  #seconds if linear, e^n if exponential
+        decay_model: 0    #0=linear, 1=exponential, 2=persistent
+        voxel_size: 0.05   #meters
+        track_unknown_space: true  #default space is unknown
+        observation_persistence: 0.0  #seconds(buffer)
+        max_obstacle_height:   1.5    #meters
+        mark_threshold:        2      #voxel height
+        unknown_threshold: 15
+        update_footprint_enabled: true
+        combination_method: 1  #1=max, 0=override
+        obstacle_range: 5.0    #meters
+        origin_z: 0.0          #meters
+        publish_voxel_map: false  # default off  Debug용
+        transform_tolerance: 0.1 # seconds
+        # mapping_mode: false      # default off, saves map not for navigation
+        # map_save_duration: 60.0  #default 60s, how often to autosave
+        observation_sources: pointcloud
+        pointcloud:
+          data_type: PointCloud2
+          topic: /zed/zed_node/mapping/fused_cloud
+          # transport_type: "raw"        #default raw -No compression-, Options: zlib, draco, zstd
+          marking: true
+          clearing: true
+          obstacle_range: 5.0
+          min_obstacle_height: 0.05   #default 0, meters
+          max_obstacle_height: 1.5  #defaule 3, meters
+          expected_update_rate: 0.0  #default 0, if not updating at this rate at least, remove from buffer
+          observation_persistence: 0.0 #default 0, use all measurements taken during now-value, 0=latest
+          inf_is_valid: false  #default false, for laser scans
+          filter: "voxel"   #default passthrough, apply "voxel", "passthrough", or no filter to sensor data, recommended to have at one filter on
+          voxel_min_points: 0   #default 0, minimum points per voxel for voxel filter
+          clear_after_reading: true #default false, clear the buffer after the layer gets readings from it
+          max_z: 6.0 #default 10, meters
+          min_z: 0.35 #default 0, meters
+          vertical_fov_angle: 1.22173  #default 0.7, radians / zed datasheet상 1.22173
+          vertical_fov_offset: 0.0     # default 0, radians. 3D Lidar only. Offset from planar axis. f.e. MID360 has a vFOV of -7deg to 52deg => offset +22.5deg (0.3927 rad)
+          horizontal_fov_angle: 1.9199  #default 1.04, radians / zed datasheet상 1.9199
+          decay_acceleration: 3.0 #default 0, 1/s^2. If laser scanner MUST be 0
+          model_type: 0 #default 0 (depth camera). Use 1 for 3D Lidar
+
+      denoise_layer:
+        plugin: "nav2_costmap_2d::DenoiseLayer"
+        enabled: true
+        minimal_group_size: 3
+        group_connectivity_type: 8
+
+
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        enabled: true
+        cost_scaling_factor: 2.0
+        inflation_radius: 0.4
+        inflate_unknown: false
+        inflate_around_unknown: false
+
+
+controller_server:
+  ros__parameters:
+    controller_frequency: 20.0
+    costmap_update_timeout: 0.1
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.001
+    min_theta_velocity_threshold: 0.001
+    failure_tolerance: 0.3
+    odom_topic: "/zed/zed_node/odom"
+    odom_duration: 0.3
+    search_window: 5.0
+    progress_checker_plugins: ["progress_checker"]
+    goal_checker_plugins: ["goal_checker"] # "precise_goal_checker"
+    controller_plugins: ["FollowPath"]
+
+    progress_checker:
+      plugin: "nav2_controller::PoseProgressChecker"
+      required_movement_radius: 0.05
+      required_movement_angle: 0.1
+      movement_time_allowance: 5.0
+    goal_checker:
+      plugin: "nav2_controller::PositionGoalChecker"
+      xy_goal_tolerance: 0.2
+      path_length_tolerance: 1.5
+      stateful: True
+    FollowPath:
+      plugin: "nav2_mppi_controller::MPPIController"
+      time_steps: 60
+      model_dt: 0.05
+      batch_size: 1000
+      vx_std: 0.4
+      vy_std: 0.0
+      wz_std: 0.8
+      vx_max: 0.7
+      vx_min: -0.7
+      vy_max: 0.0
+      wz_max: 1.0
+      ax_max: 1.0
+      ax_min: -1.0
+      ay_max: 0.0
+      az_max: 1.5
+      iteration_count: 1
+      temperature: 0.3
+      gamma: 0.015
+      # retry_attempt_limit: 1
+      motion_model: "DiffDrive"
+      reset_period: 1.0 # (only in Humble)
+      regenerate_noises: false
+      open_loop: false
+      visualize: false
+      TrajectoryValidator:
+        plugin: "mppi::DefaultOptimalTrajectoryValidator"
+        collision_lookahead_time: 3.0
+        consider_footprint: true
+      # AckermannConstraints:
+      #   min_turning_r: 0.2
+      critics: [ "ConstraintCritic","ObstaclesCritic", "GoalCritic", "GoalAngleCritic", "PathFollowCritic"]
+      ConstraintCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+      GoalCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        threshold_to_consider: 4.0
+      GoalAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 4.0
+        threshold_to_consider: 0.5
+        symmetric_yaw_tolerance: false
+      ObstaclesCritic:
+        enabled: true
+        cost_power: 1
+        repulsion_weight:  0.4 # inflation radius 이내
+        critical_weight: 80.0
+        consider_footprint: true
+        collision_cost: 10000.0
+        collision_margin_distance: 0.1 # 충돌 마진 거리: 심각한 페널티를 적용할 장애물과의 최소 여유 거리
+        near_goal_distance: 0.5 # 목표 근처 거리" 로보이 목표 지점에 도달할 떄 장애물 회피 가중치를 줄이기 시작하는 거리
+        inflation_radius: 0.4  # costmap의 inflation layer와 동일한 값
+        cost_scaling_factor: 2.0 # costmap의 inflation layer와 동일한 값
+      PathFollowCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        offset_from_furthest:  10 # (model_dt*time_steps)*vx_max/path_resolutions/3
+        threshold_to_consider: 4.0
+      # CostCritic:
+      #   enabled: true
+      #   cost_power: 1
+      #   cost_weight: 7.0
+      #   critical_cost: 300.0
+      #   consider_footprint: true
+      #   collision_cost: 1000000.0
+      #   near_goal_distance: 1.0
+      #   trajectory_point_step: 2
+      #   near_collision_cost: 253
+      #   inflation_radius: 0.5
+      #   cost_scaling_factor: 2.5
+      # PathAlignCritic:
+      #   enabled: true
+      #   cost_power: 1
+      #   cost_weight: 14.0
+      #   max_path_occupancy_ratio: 0.05
+      #   trajectory_point_step: 4
+      #   threshold_to_consider: 0.5
+      #   offset_from_furthest: 20
+      #   use_path_orientations: false
+      # PreferForwardCritic:
+      #   enabled: true
+      #   cost_power: 1
+      #   cost_weight: 5.0
+      #   threshold_to_consider: 0.5
+      # Option to replace Cost and use Obstacles instead
+      # PathAngleCritic:
+      #   enabled: true
+      #   cost_power: 1
+      #   cost_weight: 2.0
+      #   offset_from_furthest: 4
+      #   threshold_to_consider: 0.5
+      #   max_angle_to_furthest: 1.0
+      #   forward_preference: true
+      # VelocityDeadbandCritic:
+      #   enabled: true
+      #   cost_power: 1
+      #   cost_weight: 35.0
+      #   deadband_velocities: [0.05, 0.05, 0.05]
+      # TwirlingCritic:
+      #   enabled: true
+      #   twirling_cost_power: 1
+      #   twirling_cost_weight: 10.0
+
+velocity_smoother:
+  ros__parameters:
+    smoothing_frequency: 20.0
+    scale_velocities: False
+    feedback: "OPEN_LOOP"
+    max_velocity: [0.7, 0.0, 1.0]
+    min_velocity: [-0.7, 0.0, -1.0]
+    max_accel: [1.0, 0.0, 1.5]
+    max_decel: [-1.0, 0.0, -1.5]
+    odom_topic: "/zed/zed_node/odom"
+    odom_duration: 0.1
+    deadband_velocity: [0.0, 0.0, 0.0]
+    velocity_timeout: 1.0
+
+collision_monitor:
+  ros__parameters:
+    enabled: false
+    base_frame_id: "base_link"
+    odom_frame_id: "odom"
+    cmd_vel_in_topic: "cmd_vel_nav"
+    cmd_vel_out_topic: "cmd_vel"
+    state_topic: "collision_monitor_state"
+    transform_tolerance: 0.1
+    source_timeout: 2.0
+    base_shift_correction: True
+    stop_pub_timeout: 2.0
+    enable_stamped_cmd_vel: True  # False for Jazzy or older
+    use_realtime_priority: false
+    polygons: [ "PolygonSlow", "FootprintApproach"]
+    PolygonSlow:
+      type: "polygon"
+      points: "[[0.42886, 0.355472], [0.42886, -0.355472], [-0.42886, -0.355472], [-0.42886, 0.355472]]"
+      action_type: "slowdown"
+      min_points: 3  # max_points: 3 for Humble
+      slowdown_ratio: 0.3
+      visualize: True
+      polygon_pub_topic: "polygon_slowdown"
+      enabled: True
+    FootprintApproach:
+      type: "polygon"
+      action_type: "approach"
+      footprint_topic: "/local_costmap/published_footprint"
+      time_before_collision: 2.0
+      simulation_time_step: 0.02
+      min_points: 6  # max_points: 5 for Humble
+      visualize: False
+      enabled: True
+    observation_sources: ["pointcloud"]
+    pointcloud:
+      type: "pointcloud"
+      topic: "/zed/zed_node/point_cloud/cloud_registered"
+      transport_type: "raw"  # raw or/ with compression (zlib, draco, zstd)
+      min_height: 0.05
+      max_height: 1.2
+      min_range: 0.2
+      enabled: True
+
