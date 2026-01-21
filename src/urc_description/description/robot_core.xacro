@@ -3,15 +3,15 @@
 
   <xacro:arg name="camera_name" default="zed"/>
   <xacro:arg name="camera_model" default="zed2"/>
-  
+
   <material name="white">
     <color rgba="1 1 1 1"/>
   </material>
   <material name="gray">
     <color rgba="0.5 0.5 0.5 1"/>
   </material>
-  
-  
+
+
   <!-- ============================= -->
   <!-- BASE LINK / FOOTPRINT -->
   <!-- ============================= -->
@@ -29,13 +29,13 @@
   <!-- ============================= -->
   <link name="chassis_link">
     <visual>
-      <origin xyz="0.242 0 0.0815"/>
-      <geometry><box size="0.484 0.406 0.163"/></geometry>
+      <origin xyz="0.26 0.0 0.0875"/>
+      <geometry><box size="0.52 0.52 0.175"/></geometry>
       <material name="white"/>
     </visual>
     <collision>
-      <origin xyz="0.242 0 0.0815"/>
-      <geometry><box size="0.484 0.406 0.163"/></geometry>
+      <origin xyz="0.53 0.0 0.0875"/>
+      <geometry><box size="1.06 0.74 0.175"/></geometry>
     </collision>
   </link>
 
@@ -124,7 +124,7 @@
   <!-- ROS2 xacro에서는 find-pkg-share 대신 find -->
   <xacro:include filename="$(find zed_wrapper)/urdf/zed_macro.urdf.xacro"/>
 
-  
+
   <xacro:zed_camera name="$(arg camera_name)" model="$(arg camera_model)">
    <gnss_origin/>
   </xacro:zed_camera>
@@ -132,20 +132,33 @@
   <joint name="zed_joint" type="fixed">
     <parent link="base_link"/>
     <child link="$(arg camera_name)_camera_link"/>
-    <origin xyz="0.226 0.0 0.0955" rpy="0 0 0"/>
+    <origin xyz="0.25 0.000 0.01" rpy="0 0 0"/>
   </joint>
-  
-  
+
+
 
   <!-- ============================= -->
   <!-- GNSS LINK -->
   <!-- ============================= -->
-  <link name="gps_link"/>
-  <joint name="gps_joint" type="fixed">
+  <!-- GNSS 안테나 프레임 - mb00b -->
+  <link name="gnss_mb_link">
+
+  </link>
+
+  <joint name="mb_joint" type="fixed">
     <parent link="base_link"/>
-    <child link="gps_link"/>
-    <origin xyz="-0.2425 -0.2035 0.2485" rpy="0 0 0"/>
+    <child  link="gnss_mb_link"/>
+    <origin xyz="0.03 -0.25 0.1296" rpy="0 0 0"/>
   </joint>
 
-</robot>
+  <!-- GNSS 안테나 프레임 - mr02b -->
+  <link name="gnss_mr_link">
 
+  </link>
+
+  <joint name="mr_joint" type="fixed">
+    <parent link="base_link"/>
+    <child  link="gnss_mr_link"/>
+    <origin xyz="0.03 0.25 0.1296" rpy="0 0 0"/>
+  </joint>
+</robot>

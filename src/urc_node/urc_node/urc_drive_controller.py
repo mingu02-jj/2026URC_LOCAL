@@ -14,7 +14,7 @@ class SwerveDriveController(Node):
         self.steering_pub = self.create_publisher(Float64MultiArray, '/urc_steering_controller/commands', 15)
         self.velocity_pub = self.create_publisher(Float64MultiArray, '/urc_velocity_controller/commands', 15)
 
-        
+
         try:
             self.serial = serial.Serial('/dev/ttyACM0', 115200, timeout=0.01)
             self.get_logger().info("Serial connected to /dev/ttyACM0")
@@ -32,8 +32,8 @@ class SwerveDriveController(Node):
         angular_z = msg.angular.z
 
         self.send_serial(linear_x, linear_y, angular_z)
-        
-        
+
+
     #float → int16 (스케일링 후 클램프)
     def _to_s16(self, x: float) -> int:
         if math.isnan(x) or math.isinf(x):
@@ -51,7 +51,7 @@ class SwerveDriveController(Node):
 
         vx = 0.0 if abs(vx) >= 100.0 else vx
         vy = 0.0 if abs(vy) >= 100.0 else vy
-        omega = 0.0 if abs(omega) >= 1.0 else omega
+        omega = max(-1.0, min(1.0, omega))
 
         # 스케일 적용: vx, vy ×100 / omega ×1000
         vx_i = self._to_s16(vx * 100.0)
