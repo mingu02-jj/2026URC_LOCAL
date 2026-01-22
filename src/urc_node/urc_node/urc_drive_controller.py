@@ -1,40 +1,50 @@
+
+import math
+import serial
+
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float64MultiArray
-import math
-import serial
 
 
 class SwerveDriveController(Node):
     def __init__(self):
         super().__init__('urc_drive_controller')
 
-        self.cmd_vel_sub = self.create_subscription(Twist, '/cmd_vel', self.cmd_vel_callback, 15)
+        # ===== Parameters =====
+        # 최종적으로 MCU에 내려줄 cmd_vel 입력 토픽 (기본: mux 출력)
+        self.declare_parameter('cmd_vel_topic', '/cmd_vel')
+        self.declare_parameter('serial_port', '/dev/ttyACM0')
+        self.declare_parameter('baudrate', 115200)
+
+        cmd_vel_topic = self.get_parameter('cmd_vel_topic').value
+        port = self.get_parameter('serial_port').value
+        baud = int(self.get_parameter('baudrate').value)
+
+        # ===== ROS I/O =====
+        self.cmd_vel_sub = self.create_subscription(Twist, cmd_vel_topic, self.cmd_vel_callback, 15)
         self.steering_pub = self.create_publisher(Float64MultiArray, '/urc_steering_controller/commands', 15)
         self.velocity_pub = self.create_publisher(Float64MultiArray, '/urc_velocity_controller/commands', 15)
 
-
+        # ===== Serial =====
         try:
-            self.serial = serial.Serial('/dev/ttyACM0', 115200, timeout=0.01)
-            self.get_logger().info("Serial connected to /dev/ttyACM0")
+            self.serial = serial.Serial(port, baud, timeout=0.01)
+            self.get_logger().info(f"Serial connected to {port} @ {baud}")
         except serial.SerialException as e:
-            self.get_logger().error(f"Failed to open serial port /dev/ttyACM0: {e}")
+            self.get_logger().error(f"Failed to open serial port {port}: {e}")
             self.serial = None
 
         # SAFETY bits
         self.alive_bit = 0      # b1 (토글)
         self.estop_bit = 0      # b0 (외부 제어용)
 
-    def cmd_vel_callback(self, msg):
-        linear_x = msg.linear.x
-        linear_y = msg.linear.y
-        angular_z = msg.angular.z
+        self.get_logger().info(f"Subscribed cmd_vel_topic: {cmd_vel_topic}")
 
-        self.send_serial(linear_x, linear_y, angular_z)
+    def cmd_vel_callback(self, msg: Twist):
+        self.send_serial(msg.linear.x, msg.linear.y, msg.angular.z)
 
-
-    #float → int16 (스케일링 후 클램프)
+    # float → int16 (스케일링 후 클램프)
     def _to_s16(self, x: float) -> int:
         if math.isnan(x) or math.isinf(x):
             x = 0.0

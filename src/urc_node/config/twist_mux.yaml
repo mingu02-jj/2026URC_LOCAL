@@ -1,0 +1,28 @@
+twist_mux:
+  ros__parameters:
+    topics:
+      auto:
+        topic: cmd_vel
+        timeout: 0.5
+        priority: 10
+
+      lora:
+        topic: cmd_vel_lora
+        timeout: 1.0
+        priority: 30
+
+      joy:
+        topic: cmd_vel_joy
+        timeout: 0.5
+        priority: 50
+
+    locks:
+      estop:
+        topic: estop
+        timeout: 0.5
+        priority: 255
+
+      estop_lora:
+        topic: estop_lora
+        timeout: 1.0
+        priority: 255
