@@ -15,7 +15,7 @@ class SwerveDriveController(Node):
         # ===== Parameters =====
         # 최종적으로 MCU에 내려줄 cmd_vel 입력 토픽 (기본: mux 출력)
         self.declare_parameter('cmd_vel_topic', '/cmd_vel')
-        self.declare_parameter('serial_port', '/dev/ttyACM0')
+        self.declare_parameter('serial_port', '/dev/portenta')
         self.declare_parameter('baudrate', 115200)
 
         cmd_vel_topic = self.get_parameter('cmd_vel_topic').value

@@ -26,7 +26,7 @@ def generate_launch_description():
         output='screen',
         parameters=[{
             'cmd_vel_topic': '/cmd_vel_mux',
-            'serial_port': '/dev/ttyACM0',
+            'serial_port': '/dev/portenta',
             'baudrate': 115200,
         }],
     )
