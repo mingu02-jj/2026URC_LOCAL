@@ -1,0 +1,66 @@
+# lora_rover/config/rover_lora.yaml
+# Parameters applied to lora_rover_duplex (forwarded internally to lora_rover_rx / lora_rover_tx)
+
+lora_rover_duplex:
+  ros__parameters:
+    # Serial (E22 USB-Serial)
+    serial_port: /dev/ttyUSB1
+    baudrate: 115200
+
+    # Rover outputs (to twist_mux / safety)
+    cmd_vel_out_topic: /cmd_vel_lora
+    estop_out_topic: /estop_lora
+    failsafe_stop_after_sec: 0.5
+
+    # Rover telemetry input topics
+    fix_topic: /mb00b/fix
+    heading_topic: /imu/gnss_heading
+    navpvt_topic: /mb00b/ubx_nav_pvt
+    depth_topic: /zed/zed_node/depth/depth_registered
+
+    # Heading consistency with localization navsat yaw_offset
+    yaw_offset_rad: 0.0206175
+
+    # Telemetry rates
+    hb_hz: 1.0
+    pose_hz: 1.0
+    hazard_hz: 2.0
+
+    # Collision reduction when Base is actively sending CMD
+    cmd_active_window_sec: 0.25
+    cmd_edge_poll_hz: 50.0
+
+    # FRONT_HAZARD config
+    sector_n: 12
+
+    # ROI (세로): 화면 아래(지면/정면 경로) 위주
+    roi_y_min: 0.35
+    roi_y_max: 0.85
+
+    # ROI (가로): 좌/우 가장자리(depth 스파이크/로버 몸체) 제외용
+    # - 기본값(0.0~1.0)은 전체 폭 사용 (기존 동작 유지)
+    # - 추천 시작값: 0.10~0.90
+    roi_x_min: 0.1
+    roi_x_max: 0.9
+    too_close_zero_frac_threshold: 0.6  # 0.0이면 비활성. 유효/0값 비율이 이 값 이상이면 '너무 가까움'으로 간주하여 min_valid_m로 처리
+
+    # Valid depth range
+    min_valid_m: 0.4
+    max_valid_m: 8.0
+
+    # Sector statistic / time filter
+    percentile: 5.0
+    median_frames: 3
+
+    # forward cone + score mapping (전방 위험도는 정면 섹터 기준으로 계산)
+    forward_sector_indices: [5, 6]   # sector_n=12 기준 중앙(정면)
+
+    # Score mapping (forward_min 기반)
+    score_stop_m: 0.8               # 이 거리 이하면 score=100
+    score_warn_m: 3.0               # 이 거리 이상이면 score=0
+    score_gamma: 0.5                # <1: 멀리서도 점수 빨리 상승, 1: 선형, >1: 가까울 때만 상승
+
+    # Scaling (must match base)
+    vx_scale: 1000.0
+    vy_scale: 1000.0
+    wz_scale: 1000.0
