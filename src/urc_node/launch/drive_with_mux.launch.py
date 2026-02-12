@@ -19,6 +19,23 @@ def generate_launch_description():
         ],
     )
 
+
+    urc_state_manager_node = Node(
+        package='urc_node',
+        executable='urc_state_manager',
+        name='urc_state_manager',
+        output='screen',
+        parameters=[{
+            # keep defaults aligned with config/twist_mux.yaml
+            'joy_timeout': 0.5,
+            'lora_timeout': 1.0,
+            'nav_timeout': 0.5,
+            'arrived_hold_sec': 2.5,
+            'publish_hz': 20.0,
+            'drive_enable': True,
+        }],
+    )
+
     urc_drive_node = Node(
         package='urc_node',
         executable='urc_drive_controller',
@@ -33,5 +50,6 @@ def generate_launch_description():
 
     return LaunchDescription([
         twist_mux_node,
+        urc_state_manager_node,
         urc_drive_node,
     ])

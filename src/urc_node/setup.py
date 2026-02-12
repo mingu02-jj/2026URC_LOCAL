@@ -24,6 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'urc_drive_controller = urc_node.urc_drive_controller:main',
+            'urc_state_manager = urc_node.urc_state_manager:main',
         ],
     },
 )
